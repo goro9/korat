@@ -1,4 +1,4 @@
-package service_example
+package server
 
 import (
 	"os"
