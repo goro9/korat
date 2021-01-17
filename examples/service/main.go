@@ -7,7 +7,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func Run(adapterID string, mode string, hwaddr string) error {
+func Run(adapterID string) error {
 
 	log.SetLevel(log.TraceLevel)
 
@@ -22,9 +22,5 @@ func Run(adapterID string, mode string, hwaddr string) error {
 	btmgmt.SetBredr(false)
 	btmgmt.SetPowered(true)
 
-	if mode == "client" {
-		return client(adapterID, hwaddr)
-	} else {
-		return serve(adapterID)
-	}
+	return serve(adapterID)
 }
