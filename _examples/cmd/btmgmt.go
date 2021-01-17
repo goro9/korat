@@ -13,7 +13,7 @@
 package cmd
 
 import (
-	btmgmt_example "github.com/muka/go-bluetooth/examples/btmgmt"
+	btmgmt_example "github.com/goro9/korat/examples/btmgmt"
 	"github.com/spf13/cobra"
 )
 
