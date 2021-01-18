@@ -18,29 +18,29 @@ func serve(adapterID, uuid string) error {
 		UUID:       uuid[:4],
 	}
 
-	a, err := service.NewApp(options)
+	app, err := service.NewApp(options)
 	if err != nil {
 		return err
 	}
-	defer a.Close()
+	defer app.Close()
 
-	a.SetName("korat_test")
+	app.SetName("korat_test")
 
-	log.Infof("HW address %s", a.Adapter().Properties.Address)
+	log.Infof("HW address %s", app.Adapter().Properties.Address)
 
-	if !a.Adapter().Properties.Powered {
-		err = a.Adapter().SetPowered(true)
+	if !app.Adapter().Properties.Powered {
+		err = app.Adapter().SetPowered(true)
 		if err != nil {
 			log.Fatalf("Failed to power the adapter: %s", err)
 		}
 	}
 
-	service1, err := a.NewService("2233")
+	service1, err := app.NewService("2233")
 	if err != nil {
 		return err
 	}
 
-	err = a.AddService(service1)
+	err = app.AddService(service1)
 	if err != nil {
 		return err
 	}
@@ -95,7 +95,7 @@ func serve(adapterID, uuid string) error {
 		return err
 	}
 
-	err = a.Run()
+	err = app.Run()
 	if err != nil {
 		return err
 	}
@@ -104,7 +104,7 @@ func serve(adapterID, uuid string) error {
 
 	timeout := uint32(6 * 3600) // 6h
 	log.Infof("Advertising for %ds...", timeout)
-	cancel, err := a.Advertise(timeout)
+	cancel, err := app.Advertise(timeout)
 	if err != nil {
 		return err
 	}
