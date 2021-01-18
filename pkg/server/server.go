@@ -24,6 +24,9 @@ func serve(adapterID, uuid string) error {
 	}
 	defer app.Close()
 
+	adv := app.GetAdvertisement()
+	adv.AddServiceUUID(uuid)
+
 	app.SetName("korat_test")
 
 	log.Infof("HW address %s", app.Adapter().Properties.Address)
