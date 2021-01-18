@@ -9,13 +9,13 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func serve(adapterID string) error {
+func serve(adapterID, uuid string) error {
 
 	options := service.AppOptions{
 		AdapterID:  adapterID,
 		AgentCaps:  agent.CapNoInputNoOutput,
-		UUIDSuffix: "-0000-1000-8000-00805F9B34FB",
-		UUID:       "1234",
+		UUIDSuffix: uuid[8:],
+		UUID:       uuid[:4],
 	}
 
 	a, err := service.NewApp(options)
@@ -24,7 +24,7 @@ func serve(adapterID string) error {
 	}
 	defer a.Close()
 
-	a.SetName("go_bluetooth")
+	a.SetName("korat_test")
 
 	log.Infof("HW address %s", a.Adapter().Properties.Address)
 
