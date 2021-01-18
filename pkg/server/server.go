@@ -38,7 +38,7 @@ func serve(adapterID, uuid string) error {
 		}
 	}
 
-	service1, err := app.NewService("2233")
+	service1, err := app.NewService("0000")
 	if err != nil {
 		return err
 	}
@@ -48,11 +48,12 @@ func serve(adapterID, uuid string) error {
 		return err
 	}
 
-	char1, err := service1.NewChar("3344")
+	char1, err := service1.NewChar("0010")
 	if err != nil {
 		return err
 	}
 
+	// TODO: secure write and read
 	char1.Properties.Flags = []string{
 		gatt.FlagCharacteristicRead,
 		gatt.FlagCharacteristicWrite,
@@ -74,7 +75,7 @@ func serve(adapterID, uuid string) error {
 		return err
 	}
 
-	descr1, err := char1.NewDescr("4455")
+	descr1, err := char1.NewDescr("0011")
 	if err != nil {
 		return err
 	}
