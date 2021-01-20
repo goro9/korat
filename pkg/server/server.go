@@ -9,47 +9,51 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func serve(adapterID string) error {
+func serve(adapterID, uuid string) error {
 
 	options := service.AppOptions{
 		AdapterID:  adapterID,
 		AgentCaps:  agent.CapNoInputNoOutput,
-		UUIDSuffix: "-0000-1000-8000-00805F9B34FB",
-		UUID:       "1234",
+		UUIDSuffix: uuid[8:],
+		UUID:       uuid[:4],
 	}
 
-	a, err := service.NewApp(options)
+	app, err := service.NewApp(options)
 	if err != nil {
 		return err
 	}
-	defer a.Close()
+	defer app.Close()
 
-	a.SetName("go_bluetooth")
+	adv := app.GetAdvertisement()
+	adv.AddServiceUUID(uuid)
 
-	log.Infof("HW address %s", a.Adapter().Properties.Address)
+	app.SetName("korat_test")
 
-	if !a.Adapter().Properties.Powered {
-		err = a.Adapter().SetPowered(true)
+	log.Infof("HW address %s", app.Adapter().Properties.Address)
+
+	if !app.Adapter().Properties.Powered {
+		err = app.Adapter().SetPowered(true)
 		if err != nil {
 			log.Fatalf("Failed to power the adapter: %s", err)
 		}
 	}
 
-	service1, err := a.NewService("2233")
+	service1, err := app.NewService("0000")
 	if err != nil {
 		return err
 	}
 
-	err = a.AddService(service1)
+	err = app.AddService(service1)
 	if err != nil {
 		return err
 	}
 
-	char1, err := service1.NewChar("3344")
+	char1, err := service1.NewChar("0010")
 	if err != nil {
 		return err
 	}
 
+	// TODO: secure write and read
 	char1.Properties.Flags = []string{
 		gatt.FlagCharacteristicRead,
 		gatt.FlagCharacteristicWrite,
@@ -71,7 +75,7 @@ func serve(adapterID string) error {
 		return err
 	}
 
-	descr1, err := char1.NewDescr("4455")
+	descr1, err := char1.NewDescr("0011")
 	if err != nil {
 		return err
 	}
@@ -95,7 +99,7 @@ func serve(adapterID string) error {
 		return err
 	}
 
-	err = a.Run()
+	err = app.Run()
 	if err != nil {
 		return err
 	}
@@ -104,7 +108,7 @@ func serve(adapterID string) error {
 
 	timeout := uint32(6 * 3600) // 6h
 	log.Infof("Advertising for %ds...", timeout)
-	cancel, err := a.Advertise(timeout)
+	cancel, err := app.Advertise(timeout)
 	if err != nil {
 		return err
 	}

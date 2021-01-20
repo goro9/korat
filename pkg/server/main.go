@@ -22,5 +22,6 @@ func Run(adapterID string) error {
 	btmgmt.SetBredr(false)
 	btmgmt.SetPowered(true)
 
-	return serve(adapterID)
+	uuid := "b6052f67-891b-41f8-9517-afcb066c7955"
+	return serve(adapterID, uuid)
 }
