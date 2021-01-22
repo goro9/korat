@@ -1,31 +1,19 @@
 package bbtp
 
 import (
-	"fmt"
-
 	"github.com/fxamacker/cbor/v2"
 )
 
 type Req struct {
 	Method byte   `cbor:"method"`
 	Auth   []byte `cbor:"auth,omitempty"`
-	Path   []byte `cbor:"path,omitempty"`
+	Path   string `cbor:"path,omitempty"`
 	Body   []byte `cbor:"body"`
 }
 
 type Res struct {
 	Method byte   `cbor:"method"`
 	Body   []byte `cbor:"body"`
-}
-
-type reqSampleBody struct {
-	TestStr string `cbor:"str"`
-	TestNum int    `cbor:"num"`
-}
-
-type resSampleBody struct {
-	TestStr string `cbor:"str"`
-	TestNum int    `cbor:"num"`
 }
 
 func Handle(reqBin []byte) ([]byte, error) {
@@ -36,24 +24,32 @@ func Handle(reqBin []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	// unmarshal request body
-	var reqBody reqSampleBody
-	err = cbor.Unmarshal(req.Body, &reqBody)
-	fmt.Printf("request: str=%s, num=%d\n", reqBody.TestStr, reqBody.TestNum)
-
-	// marshal response body
-	resBody := resSampleBody{
-		TestStr: reqBody.TestStr,
-		TestNum: reqBody.TestNum,
-	}
+	// handle request
 	res := Res{
-		Method: req.Method,
+		Method: 0,
 	}
-	fmt.Printf("response: str=%s, num=%d\n", resBody.TestStr, resBody.TestNum)
-	res.Body, err = cbor.Marshal(&resBody)
+	res.Body = hm[req.Path].h(req.Body)
 
 	// marshal response
 	resBin, err := cbor.Marshal(&res)
 
 	return resBin, nil
+}
+
+type handlerMap map[string]handler
+
+var hm handlerMap
+
+type handler struct {
+	path string
+	h    func([]byte) []byte
+}
+
+func HandleFunc(path string, h func([]byte) []byte) {
+	hBuf := handler{path: path, h: h}
+	hm[path] = hBuf
+}
+
+func init() {
+	hm = handlerMap{}
 }
