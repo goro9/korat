@@ -25,9 +25,9 @@ func TestHandle(t *testing.T) {
 		TestNum: 255,
 	}
 	expectResBodyBin, _ := cbor.Marshal(&expectResBody)
-	expectRes := Res{
-		Method: 0,
-		Body:   expectResBodyBin,
+	expectRes := Response{
+		StatusCode: 200,
+		Body:       expectResBodyBin,
 	}
 
 	// test data
@@ -36,23 +36,26 @@ func TestHandle(t *testing.T) {
 		TestNum: expectResBody.TestNum,
 	}
 	reqBodyBin, _ := cbor.Marshal(&reqBody)
-	req := Req{
-		Method: expectRes.Method,
-		Auth:   nil,
+	req := Request{
+		Method: Post,
 		Path:   "test",
-		Body:   reqBodyBin,
+		Header: Header{
+			Auth: nil,
+		},
+		Body: reqBodyBin,
 	}
 	reqBin, _ := cbor.Marshal(&req)
+	uuid := "00000000-0000-0000-0000-000000000000"
 
 	// execute
 	HandleFunc("test", testHandler)
-	resBin, err := Handle(reqBin)
+	resBin, err := Handle(uuid, reqBin)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// judge pre process
-	var res Res
+	var res Response
 	err = cbor.Unmarshal(resBin, &res)
 	if err != nil {
 		t.Fatal(err)
@@ -72,11 +75,12 @@ func TestHandle(t *testing.T) {
 	}
 }
 
-func testHandler(bodyBin []byte) []byte {
+func testHandler(res *Response, req *Request) error {
 	// unmarshal request body
 	var reqBody reqSampleBody
-	if err := cbor.Unmarshal(bodyBin, &reqBody); err != nil {
-		return nil
+	err := cbor.Unmarshal([]byte(req.Body), &reqBody)
+	if err != nil {
+		return err
 	}
 	fmt.Printf("request: str=%s, num=%d\n", reqBody.TestStr, reqBody.TestNum)
 
@@ -86,9 +90,12 @@ func testHandler(bodyBin []byte) []byte {
 		TestNum: reqBody.TestNum,
 	}
 	fmt.Printf("response: str=%s, num=%d\n", resBody.TestStr, resBody.TestNum)
-	resBodyBin, err := cbor.Marshal(&resBody)
+	res.Body, err = cbor.Marshal(&resBody)
 	if err != nil {
-		return nil
+		return err
 	}
-	return resBodyBin
+
+	res.Header = Header{}
+	res.StatusCode = 200
+	return nil
 }

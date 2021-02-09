@@ -1,39 +1,55 @@
 package bbtp
 
-import (
-	"github.com/fxamacker/cbor/v2"
+type Method int
+
+const (
+	Get Method = iota
+	Post
+	Put
+	Delete
 )
 
-type Req struct {
-	Method byte   `cbor:"method"`
-	Auth   []byte `cbor:"auth,omitempty"`
-	Path   string `cbor:"path,omitempty"`
-	Body   []byte `cbor:"body"`
+type Request struct {
+	Method   Method `cbor:"method"`
+	UUID     string
+	Path     string `cbor:"path"`
+	Header   Header `cbor:"header"`
+	Body     Body   `cbor:"body"`
+	Response *Response
 }
 
-type Res struct {
-	Method byte   `cbor:"method"`
-	Body   []byte `cbor:"body"`
+type Header struct {
+	Auth []byte `cbor:"auth,omitempty"`
 }
 
-func Handle(reqBin []byte) ([]byte, error) {
+type Body []byte
+
+type Response struct {
+	StatusCode int    `cbor:"code"`
+	Header     Header `cbor:"header"`
+	Body       Body   `cbor:"body"`
+	Request    *Request
+}
+
+func Handle(uuid string, reqRaw []byte) ([]byte, error) {
 	// unmarshal request
-	var req Req
-	err := cbor.Unmarshal(reqBin, &req)
+	var req Request
+	err := decodeReq(uuid, reqRaw, &req)
 	if err != nil {
 		return nil, err
 	}
 
 	// handle request
-	res := Res{
-		Method: 0,
+	var res Response
+	err = hm[req.Path].h(&res, &req)
+	if err != nil {
+		return nil, err
 	}
-	res.Body = hm[req.Path].h(req.Body)
 
 	// marshal response
-	resBin, err := cbor.Marshal(&res)
+	resRaw, err := encodeRes(&res)
 
-	return resBin, nil
+	return resRaw, nil
 }
 
 type handlerMap map[string]handler
@@ -42,10 +58,10 @@ var hm handlerMap
 
 type handler struct {
 	path string
-	h    func([]byte) []byte
+	h    func(*Response, *Request) error
 }
 
-func HandleFunc(path string, h func([]byte) []byte) {
+func HandleFunc(path string, h func(*Response, *Request) error) {
 	hBuf := handler{path: path, h: h}
 	hm[path] = hBuf
 }
