@@ -9,6 +9,14 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+type SetOptions func(*service.App) error
+
+var setOptions SetOptions
+
+func AddSetter(s SetOptions) {
+	setOptions = s
+}
+
 func serve(adapterID, uuid string) error {
 
 	options := service.AppOptions{
@@ -38,73 +46,55 @@ func serve(adapterID, uuid string) error {
 		}
 	}
 
-	service1, err := app.NewService("0000")
+	rpiIotSvc, err := app.NewService("0000")
 	if err != nil {
 		return err
 	}
 
-	err = app.AddService(service1)
+	err = app.AddService(rpiIotSvc)
 	if err != nil {
 		return err
 	}
 
-	char1, err := service1.NewChar("0010")
+	setupChar, err := rpiIotSvc.NewChar("0010")
 	if err != nil {
 		return err
 	}
 
 	// TODO: secure write and read
-	char1.Properties.Flags = []string{
+	setupChar.Properties.Flags = []string{
 		gatt.FlagCharacteristicRead,
 		gatt.FlagCharacteristicWrite,
 	}
 
-	char1.OnRead(service.CharReadCallback(func(c *service.Char, options map[string]interface{}) ([]byte, error) {
+	setupChar.OnRead(service.CharReadCallback(func(c *service.Char, options map[string]interface{}) ([]byte, error) {
 		log.Warnf("GOT READ REQUEST")
 		return []byte{42}, nil
 	}))
 
-	char1.OnWrite(service.CharWriteCallback(func(c *service.Char, value []byte) ([]byte, error) {
+	setupChar.OnWrite(service.CharWriteCallback(func(c *service.Char, value []byte) ([]byte, error) {
 		log.Warnf("GOT WRITE REQUEST")
 		log.Warnf(string(value))
 		return value, nil
 	}))
 
-	err = service1.AddChar(char1)
+	err = rpiIotSvc.AddChar(setupChar)
 	if err != nil {
 		return err
 	}
 
-	descr1, err := char1.NewDescr("0011")
-	if err != nil {
-		return err
-	}
+	log.Infof("Exposed service %s", rpiIotSvc.Properties.UUID)
 
-	descr1.Properties.Flags = []string{
-		gatt.FlagDescriptorRead,
-		gatt.FlagDescriptorWrite,
-	}
-
-	descr1.OnRead(service.DescrReadCallback(func(c *service.Descr, options map[string]interface{}) ([]byte, error) {
-		log.Warnf("GOT READ REQUEST")
-		return []byte{42}, nil
-	}))
-	descr1.OnWrite(service.DescrWriteCallback(func(d *service.Descr, value []byte) ([]byte, error) {
-		log.Warnf("GOT WRITE REQUEST")
-		return value, nil
-	}))
-
-	err = char1.AddDescr(descr1)
-	if err != nil {
-		return err
+	if setOptions != nil {
+		if err := setOptions(app); err != nil {
+			return err
+		}
 	}
 
 	err = app.Run()
 	if err != nil {
 		return err
 	}
-
-	log.Infof("Exposed service %s", service1.Properties.UUID)
 
 	timeout := uint32(6 * 3600) // 6h
 	log.Infof("Advertising for %ds...", timeout)
